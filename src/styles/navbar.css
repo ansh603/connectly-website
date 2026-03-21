@@ -1,0 +1,100 @@
+/* =====================================================
+   CONNECTLY — Navbar & Bottom Nav
+   src/styles/navbar.css
+   ===================================================== */
+
+.navbar {
+  background: var(--c-nav); position: sticky; top: 0;
+  z-index: var(--z-nav);  height: auto;
+}
+.navbar-inner {
+  max-width: 1200px; margin: 0 auto; padding: 18px 24px;
+  height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+
+/* Logo */
+.nav-logo { display: flex; align-items: center; gap: 10px; cursor: pointer; flex-shrink: 0; text-decoration:none; }
+.nav-logo-icon { width: 38px; height: 38px; background: var(--c-primary); border-radius: 11px; display: flex; align-items: center; justify-content: center; }
+.nav-logo-text { font-family: var(--font-serif); font-size: 22px; font-weight: 700; color: #fff; }
+.nav-logo-text span { color: var(--c-primary); }
+
+/* Links */
+.nav-links { display: flex; align-items: center; gap: 4px; }
+.nav-link {
+  background: transparent; border: none; color: rgba(255,255,255,.72);
+  padding: 8px 16px; border-radius: var(--r-md); font-size: 16px; font-weight: 500;
+  cursor: pointer; transition: all var(--t-fast); font-family: var(--font-sans);
+  text-decoration: none; display: inline-block;
+}
+.nav-link:hover  { color: #fff; background: rgba(255,255,255,.07); }
+.nav-link.active { background: var(--c-primary); color: #fff; }
+
+/* Right side */
+.nav-right { display: flex; align-items: center; gap: 12px; }
+
+/* Bell */
+.notif-btn {
+  position: relative; background: rgba(255,255,255,.09); border: none;
+  border-radius: var(--r-md); padding: 9px; cursor: pointer; color: #fff;
+  display: flex; align-items: center; transition: background var(--t-fast);
+}
+.notif-btn:hover { background: rgba(255,255,255,.15); }
+.notif-badge { position:absolute; top:5px; right:5px; width:9px; height:9px; background:var(--c-primary); border-radius:50%; border:2px solid var(--c-nav); }
+
+/* User pill */
+.nav-user { display:flex; align-items:center; gap:10px; cursor:pointer; padding:5px 10px 5px 5px; border-radius:var(--r-full); transition:background var(--t-fast); }
+.nav-user:hover { background:rgba(255,255,255,.07); }
+.nav-user-name   { font-size:13px; font-weight:600; color:#fff; line-height:1; }
+.nav-user-wallet { font-size:11px; color:rgba(255,255,255,.5); margin-top:2px; }
+
+/* Hamburger */
+.hamburger { background:transparent; border:none; cursor:pointer; color:#fff; display:none; align-items:center; padding:6px; }
+
+/* Mobile drawer */
+.mobile-drawer { background:var(--c-nav); padding:12px 24px 20px; border-top:1px solid rgba(255,255,255,.08); }
+.mobile-link {
+  display:block; width:100%; background:transparent; border:none; color:rgba(255,255,255,.8);
+  padding:13px 16px; border-radius:var(--r-md); font-size:15px; font-weight:500; cursor:pointer;
+  text-align:left; margin-bottom:4px; font-family:var(--font-sans); text-decoration:none;
+  transition:all var(--t-fast);
+}
+.mobile-link:hover  { background:rgba(255,255,255,.06); color:#fff; }
+.mobile-link.active { background:var(--c-primary); color:#fff; }
+
+/* Bottom Nav */
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0;
+  background:var(--c-nav); border-top:3px solid var(--c-primary);
+  padding:8px 0 14px; z-index:var(--z-nav); display:none;
+}
+.bottom-nav-inner { display:flex; justify-content:space-around; }
+.bnav-btn {
+  background:transparent; border:none; cursor:pointer; display:flex; flex-direction:column;
+  align-items:center; gap:3px; padding:0 8px; color:rgba(255,255,255,.42);
+  transition:color var(--t-fast); font-family:var(--font-sans); min-width:48px;
+}
+.bnav-btn.active { color:var(--c-primary); }
+.bnav-btn span   { font-size:10px; font-weight:600; }
+
+@media (max-width:768px) {
+  .nav-links { display:none; }
+  .hamburger { display:flex; }
+  .nav-user-info { display:none; }
+  .bottom-nav { display:block; }
+  .page-wrap  { padding-bottom:90px; }
+  .navbar-inner { padding:12px 16px; }
+  .nav-logo-text { font-size:18px; }
+}
+@media (max-width:576px) {
+  .navbar-inner { padding:10px 14px; }
+  .nav-logo-icon { width:32px; height:32px; border-radius:9px; }
+  .nav-logo-text { font-size:17px; }
+  .bottom-nav { padding:6px 0 12px; }
+  .bnav-btn span { font-size:9px; }
+  .notif-btn { padding:7px; }
+}
+@media (min-width:769px) and (max-width:1024px) {
+  .nav-links  { gap:2px; }
+  .nav-link   { padding:7px 10px; font-size:14px; }
+  .navbar-inner { padding:14px 20px; }
+}

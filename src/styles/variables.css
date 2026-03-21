@@ -1,0 +1,51 @@
+/* =====================================================
+   CONNECTLY — CSS Design Tokens
+   src/styles/variables.css
+   ===================================================== */
+/* Modern indigo & violet theme — premium, trustworthy */
+:root {
+  /* Colors — indigo primary, warm neutrals */
+  --c-bg:            #FAFAF9;
+  --c-surface:       #F5F5F4;
+  --c-card:          #FFFFFF;
+  --c-primary:       #6366F1;
+  --c-primary-lt:    #EEF2FF;
+  --c-primary-dk:    #4F46E5;
+  --c-accent:        #8B5CF6;
+  --c-accent-lt:     #EDE9FE;
+  --c-gold:          #D97706;
+  --c-gold-lt:       #FEF3C7;
+  --c-dark:          #18181B;
+  --c-mid:           #3F3F46;
+  --c-muted:         #71717A;
+  --c-border:        #E4E4E7;
+  --c-success:       #059669;
+  --c-warning:       #D97706;
+  --c-danger:        #DC2626;
+  --c-nav:           #18181B;
+
+  /* Typography */
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans:  'Outfit', system-ui, sans-serif;
+
+  /* Radius — slightly rounder */
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   18px;
+  --r-xl:   24px;
+  --r-full: 9999px;
+
+  /* Shadow — softer, more depth */
+  --shadow-sm: 0 2px 10px rgba(0,0,0,0.05);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 20px 50px rgba(0,0,0,0.1);
+  --shadow-xl: 0 32px 64px rgba(0,0,0,0.12);
+
+  /* Transition */
+  --t-fast: 0.15s ease;
+  --t-base: 0.25s ease;
+
+  /* Z-Index */
+  --z-nav:     900;
+  --z-overlay: 1000;
+}
