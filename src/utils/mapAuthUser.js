@@ -2,6 +2,11 @@
  * Merge API auth payload into the shape the UI expects (MOCK_USER-compatible).
  */
 export function mapAuthUserToAppUser(apiData = {}, mockSeed = {}) {
+  const photo =
+    (apiData.profile_path && String(apiData.profile_path).trim())
+      ? String(apiData.profile_path).trim()
+      : mockSeed.photo;
+
   const interestList = Array.isArray(apiData.interests) ? apiData.interests : [];
   const interestIds =
     interestList.length > 0 && typeof interestList[0] === "object" && interestList[0]?.id
@@ -32,7 +37,7 @@ export function mapAuthUserToAppUser(apiData = {}, mockSeed = {}) {
     interests: interestNames?.length ? interestNames : mockSeed.interests,
     interestIds: interestIds?.length ? interestIds : mockSeed.interestIds ?? [],
     type: "individual",
-    photo: mockSeed.photo,
+    photo,
     galleryPhotos: mockSeed.galleryPhotos ?? [],
     // Keep both fields: some UI checks `verified`, others check `is_verified`.
     is_verified: apiData.is_verified === true,

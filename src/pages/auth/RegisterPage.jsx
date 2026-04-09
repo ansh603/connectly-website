@@ -180,6 +180,8 @@ export default function RegisterPage() {
   const [isMetaLoading, setIsMetaLoading] = useState(true)
   const [basic,    setBasic]    = useState({name:'',mobile:'',email:'',password:'',confirmPassword:'',type:'individual'})
   const [profile,  setProfile]  = useState({bio:'',rate:'',city_id:'',interests:[],age:''})
+  const [profileImageFile, setProfileImageFile] = useState(null)
+  const [profileImagePreview, setProfileImagePreview] = useState('')
   const [cities, setCities] = useState([])
   const [interests, setInterests] = useState([])
   const [fieldErrors, setFieldErrors] = useState({})
@@ -232,6 +234,15 @@ export default function RegisterPage() {
     } catch (err) {
       handleApiError(err, setFieldErrors)
     }
+  }
+
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setProfileImageFile(file)
+    const reader = new FileReader()
+    reader.onload = (ev) => setProfileImagePreview(String(ev.target?.result || ''))
+    reader.readAsDataURL(file)
   }
 
   /** Profile fields → availability step */
@@ -292,10 +303,22 @@ export default function RegisterPage() {
         availability: availabilityJson,
       })
 
-      const res = await registerApi({
+      const form = new FormData()
+      Object.entries({
         ...payload,
         ...getOptionalPushDevicePayload(),
+        // send interest_ids as JSON so backend can parse reliably from multipart
+        interest_ids: JSON.stringify(payload.interest_ids || []),
+      }).forEach(([k, v]) => {
+        if (v === undefined) return
+        if (v === null) return
+        form.append(k, String(v))
       })
+      if (profileImageFile) {
+        form.append('profile_image', profileImageFile)
+      }
+
+      const res = await registerApi(form)
       const debug = res.data?.data?.debug_otp
       if (debug) setOtpDevHint(String(debug))
       setAccountCreated(true)
@@ -463,6 +486,49 @@ export default function RegisterPage() {
             <>
               <h3 style={{fontWeight:700,fontSize:18,marginBottom:20,color:'var(--c-dark)'}}>Complete Your Profile</h3>
               <FieldError error={fieldErrors._form} />
+
+              <div className="form-group">
+                <label className="form-label">Profile Photo (optional)</label>
+                <div style={{ display:'flex', gap:12, alignItems:'center', flexWrap:'wrap' }}>
+                  <div style={{
+                    width:64, height:64, borderRadius:16, overflow:'hidden',
+                    border:'2px solid var(--c-border)', background:'var(--c-surface)',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                  }}>
+                    {profileImagePreview ? (
+                      <img src={profileImagePreview} alt="Profile preview" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    ) : (
+                      <Icon name="user" size={22} color="var(--c-muted)" />
+                    )}
+                  </div>
+                  <div>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => document.getElementById('reg-profile-img')?.click()}>
+                      Choose photo
+                    </Button>
+                    {profileImageFile && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setProfileImageFile(null); setProfileImagePreview('') }}
+                        style={{ marginLeft: 8 }}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                    <input
+                      id="reg-profile-img"
+                      type="file"
+                      accept="image/*"
+                      style={{ display:'none' }}
+                      onChange={handleProfileImageChange}
+                    />
+                    <p style={{ fontSize: 12, color: 'var(--c-muted)', marginTop: 6 }}>
+                      JPG/PNG/WEBP, up to 5MB.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               <Input
                 label="Age"

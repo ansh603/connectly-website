@@ -2,6 +2,14 @@ import api from "./axios.js";
 
 /** Register — creates account unverified; OTP emailed (no jwt_token until verify). */
 export const registerApi = async (payload) => {
+  // If payload is multipart (profile image upload), send FormData as-is.
+  const isFormData =
+    typeof FormData !== "undefined" && payload instanceof FormData;
+  if (isFormData) {
+    return api.post("/user/register", payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  }
   return api.post("/user/register", payload);
 };
 
