@@ -55,7 +55,7 @@ export function ProfilePreviewModal({ open, onClose, profile: p, showBook = true
              Selfie Update
             </span>
             <span style={{ background:'var(--c-primary-lt)', color:'var(--c-primary)', fontSize:11, fontWeight:600, padding:'3px 10px', borderRadius:20 }}>
-              {p.type === 'group' ? `Group · ${p.members} members` : 'Individual'}
+              Individual
             </span>
             {p.live && (
               <span style={{ display:'flex', alignItems:'center', gap:4, background:'#D1FAE5', color:'#065F46', fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:20 }}>
@@ -393,9 +393,7 @@ export default function ProfileCard({ profile: p }) {
             onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}
           />
           <div className="pcard-type">
-            <Badge variant={p.type === 'group' ? 'accent' : 'primary'}>
-              {p.type === 'group' ? `Group · ${p.members}` : 'Individual'}
-            </Badge>
+            <Badge variant="primary">Individual</Badge>
           </div>
         </div>
 

@@ -368,7 +368,7 @@ export default function ExplorePage() {
 
         <div style={{ marginBottom:24 }}>
           <h1 className="serif" style={{ fontSize:'clamp(26px,4vw,36px)', fontWeight:700, color:'var(--c-dark)' }}>Explore People</h1>
-          <p style={{ color:'var(--c-mid)', marginTop:6 }}>Find verified individuals and groups for your next social experience.</p>
+          <p style={{ color:'var(--c-mid)', marginTop:6 }}>Find verified individuals for your next social experience.</p>
         </div>
 
         {/* ── Filter Bar ── */}
@@ -391,7 +391,6 @@ export default function ExplorePage() {
               <select value={type} onChange={e => setType(e.target.value)} className="form-select" style={{ background:'var(--c-bg)' }}>
                 <option value="all">All Types</option>
                 <option value="individual">Individual</option>
-                <option value="group">Group</option>
               </select>
             </div>
 
@@ -581,7 +580,7 @@ export default function ExplorePage() {
             <strong style={{ color:'var(--c-dark)' }}>{profiles.length}</strong> profiles found
           </p>
           <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
-            {[['all','All'],['individual','Individuals'],['group','Groups']].map(([v, l]) => (
+            {[['all','All'],['individual','Individuals']].map(([v, l]) => (
               <button key={v} onClick={() => setType(v)} style={{
                 padding:'6px 14px', borderRadius:20, fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:'var(--font-sans)',
                 border:`1.5px solid ${type===v ? 'var(--c-primary)' : 'var(--c-border)'}`,

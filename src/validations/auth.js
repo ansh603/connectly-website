@@ -16,7 +16,7 @@ export const registerStep1Schema = z
     email: z.string().email("Enter a valid email address"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string(),
-    type: z.enum(["individual", "group"]),
+    type: z.literal("individual").optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -35,22 +35,8 @@ export const registerStep2IndividualSchema = profileBase.extend({
   age: z.coerce.number().int().min(13, "Enter a valid age").max(120, "Enter a valid age"),
 });
 
-export const registerStep2GroupSchema = profileBase.extend({
-  type: z.literal("group"),
-  groupName: z.string().min(2, "Group name is required"),
-  members: z.coerce.number().int().min(1, "Enter number of members"),
-  groupType: z.string().min(1, "Select group type"),
-  contactName: z.string().min(2, "Contact name is required"),
-  age: z.coerce.number().int().min(13, "Enter a valid age").max(120, "Enter a valid age"),
-  contactMobile: z
-    .string()
-    .transform((s) => s.replace(/\s/g, ""))
-    .pipe(z.string().regex(/^\d{10,15}$/, "Enter a valid contact mobile")),
-  contact_country_code: z.string().regex(/^\+\d{1,4}$/, "Invalid country code"),
-});
-
 export const registerGalleryStepSchema = z.object({
-  count: z.number().min(3, "Upload at least 3 gallery photos"),
+  count: z.number().optional(),
 });
 
 /** Step 3: at least one day marked available */
@@ -83,7 +69,7 @@ export const registerApiPayloadSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
-  type: z.enum(["individual", "group"]),
+  type: z.literal("individual").optional(),
   country_code: z.string(),
   phone_number: z.string(),
   bio: z.string(),
@@ -91,14 +77,7 @@ export const registerApiPayloadSchema = z.object({
   city_id: z.string().uuid(),
   age: z.number().nullable().optional(),
   interest_ids: z.array(z.string().uuid()).min(1),
-  profile_path: z.string().optional().nullable(),
-  profile_photos: z.array(z.string()).optional(),
+  profile_path: z.never().optional(),
+  profile_photos: z.never().optional(),
   availability: z.string().optional().nullable(),
-  // Group-specific fields (optional unless `type === 'group'`)
-  group_name: z.string().optional().nullable(),
-  group_type: z.string().optional().nullable(),
-  members: z.coerce.number().int().min(1).optional().nullable(),
-  contact_name: z.string().optional().nullable(),
-  contact_mobile: z.string().optional().nullable(),
-  contact_country_code: z.string().optional().nullable(),
 });

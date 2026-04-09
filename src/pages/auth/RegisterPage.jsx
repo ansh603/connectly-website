@@ -8,7 +8,6 @@ import FieldError from '../../components/error/FieldErrorHandler.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import { registerApi, verifyEmailApi, resendVerificationOtpApi } from '../../api/auth.js'
 import { getCitiesApi, getInterestsApi } from '../../api/global.js'
-import uploadFile from '../../utils/uploadFile.js'
 import { handleApiError } from '../../utils/handleApiError.js'
 import { getOptionalPushDevicePayload } from '../../utils/notificationDevice.js'
 import { notifySuccess } from '../../utils/notification.js'
@@ -19,7 +18,6 @@ import {
   registerGalleryStepSchema,
   registerOtpSchema,
   registerStep1Schema,
-  registerStep2GroupSchema,
   registerStep2IndividualSchema,
 } from '../../validations/auth.js'
 
@@ -184,8 +182,6 @@ export default function RegisterPage() {
   const [profile,  setProfile]  = useState({bio:'',rate:'',city_id:'',interests:[],age:''})
   const [cities, setCities] = useState([])
   const [interests, setInterests] = useState([])
-  /** @type {Array<{ file: File, preview: string }>} */
-  const [galleryItems, setGalleryItems] = useState([])
   const [fieldErrors, setFieldErrors] = useState({})
   const [dayAvail, setDayAvail] = useState(buildDefaultDayAvail)
   const [otpCode, setOtpCode] = useState('')
@@ -230,7 +226,7 @@ export default function RegisterPage() {
         email: basic.email,
         password: basic.password,
         confirmPassword: basic.confirmPassword,
-        type: basic.type,
+        type: 'individual',
       })
       setStep(2)
     } catch (err) {
@@ -238,35 +234,18 @@ export default function RegisterPage() {
     }
   }
 
-  /** Profile fields + gallery (min 3 photos) → availability step */
+  /** Profile fields → availability step */
   const goStep3 = () => {
     try {
-      if (basic.type === 'individual') {
-        registerStep2IndividualSchema.parse({
-          type: 'individual',
-          bio: profile.bio,
-          rate: profile.rate,
-          city_id: profile.city_id,
-          interests: profile.interests,
-          age: profile.age,
-        })
-      } else {
-        registerStep2GroupSchema.parse({
-          type: 'group',
-          bio: profile.bio,
-          rate: profile.rate,
-          city_id: profile.city_id,
-          interests: profile.interests,
-          groupName: profile.groupName,
-          members: profile.members,
-          groupType: profile.groupType,
-          contactName: profile.contactName,
-          age: profile.age,
-          contactMobile: profile.contactMobile,
-          contact_country_code: contactMobileCC,
-        })
-      }
-      registerGalleryStepSchema.parse({ count: galleryItems.length })
+      registerStep2IndividualSchema.parse({
+        type: 'individual',
+        bio: profile.bio,
+        rate: profile.rate,
+        city_id: profile.city_id,
+        interests: profile.interests,
+        age: profile.age,
+      })
+      registerGalleryStepSchema.parse({ count: 0 })
       setStep(3)
     } catch (err) {
       handleApiError(err, setFieldErrors)
@@ -294,32 +273,15 @@ export default function RegisterPage() {
     setIsSubmitting(true)
     setOtpDevHint('')
     try {
-      registerGalleryStepSchema.parse({ count: galleryItems.length })
-
-      let profilePath = null
-      const primaryFile =
-        profile.groupImage instanceof File ? profile.groupImage : galleryItems[0]?.file
-      if (primaryFile) {
-        profilePath = await uploadFile('profile', primaryFile)
-      }
-
-      const profilePhotos = []
-      for (const item of galleryItems) {
-        if (item?.file) {
-          const path = await uploadFile('gallery', item.file)
-          profilePhotos.push(path)
-        }
-      }
+      registerGalleryStepSchema.parse({ count: 0 })
 
       const availabilityJson = JSON.stringify({ days: dayAvail })
 
       const payload = registerApiPayloadSchema.parse({
-        // For group registrations, store the owner's name in `users.name`
-        // and store the actual group name separately in `user_groups.group_name`.
         name: basic.name.trim(),
         email: basic.email,
         password: basic.password,
-        type: basic.type,
+        type: 'individual',
         country_code: mobileCC,
         phone_number: basic.mobile.replace(/\s/g, ''),
         bio: profile.bio,
@@ -327,19 +289,7 @@ export default function RegisterPage() {
         city_id: profile.city_id,
         age: profile.age ? Number(profile.age) : null,
         interest_ids: profile.interests,
-        profile_path: profilePath || null,
-        profile_photos: profilePhotos,
         availability: availabilityJson,
-        ...(basic.type === 'group'
-          ? {
-              group_name: profile.groupName || null,
-              group_type: profile.groupType || null,
-              members: profile.members,
-              contact_name: profile.contactName || null,
-              contact_mobile: profile.contactMobile || null,
-              contact_country_code: contactMobileCC || null,
-            }
-          : {}),
       })
 
       const res = await registerApi({
@@ -380,15 +330,6 @@ export default function RegisterPage() {
     }
   }
 
-  const removeGalleryItem = (idx) => {
-    setGalleryItems((items) => {
-      const next = items.filter((_, i) => i !== idx)
-      const removed = items[idx]
-      if (removed?.preview?.startsWith('blob:')) URL.revokeObjectURL(removed.preview)
-      return next
-    })
-  }
-
   const handleVerifyAndComplete = async () => {
     setIsSubmitting(true)
     try {
@@ -406,11 +347,10 @@ export default function RegisterPage() {
 
       login(data, {
         interests: profile.interests,
-        galleryPhotos: galleryItems.map((g) => g.preview),
         location: cities.find((c) => c.id === profile.city_id)?.name || '',
         bio: profile.bio,
         hourlyRate: Number(profile.rate) || undefined,
-        type: basic.type,
+        type: 'individual',
         availability: data.availability ?? availabilityJson,
       })
       notifySuccess(res.data?.message || 'Welcome to Connectly!')
@@ -504,17 +444,6 @@ export default function RegisterPage() {
                 </p>
               )}
 
-              <div style={{marginBottom:24}}>
-                <p className="form-label">Register As</p>
-                <div className="type-grid">
-                  {[{v:'individual',icon:'user',l:'Individual'},{v:'group',icon:'users',l:'Group'}].map(t=>(
-                    <button key={t.v} className={`type-btn${basic.type===t.v?' active':''}`} onClick={()=>setBasic({...basic,type:t.v})}>
-                      <Icon name={t.icon} size={26} color={basic.type===t.v?'var(--c-primary)':'var(--c-muted)'}/>
-                      <span>{t.l}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
               <Button
                 onClick={() => { if (!passwordMismatch) goStep2() }}
                 fullWidth size="lg" iconRight="arrowRight"
@@ -535,165 +464,21 @@ export default function RegisterPage() {
               <h3 style={{fontWeight:700,fontSize:18,marginBottom:20,color:'var(--c-dark)'}}>Complete Your Profile</h3>
               <FieldError error={fieldErrors._form} />
 
-              {/* GROUP-ONLY FIELDS */}
-              {basic.type === 'group' && (
-                <div style={{
-                  background:'var(--c-primary-lt)', borderRadius:14,
-                  padding:'16px', marginBottom:20,
-                  border:'1.5px solid rgba(13,148,136,0.2)',
-                }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
-                    <Icon name="users" size={15} color="var(--c-primary)" />
-                    <p style={{ fontSize:13, fontWeight:700, color:'var(--c-primary)' }}>Group Details</p>
-                  </div>
-                  <Input
-                    label="Group Name"
-                    placeholder="e.g. Sunday Strikers, FunSquad Mumbai"
-                    value={profile.groupName || ''}
-                    onChange={e => setProfile(p=>({...p, groupName: e.target.value}))}
-                    icon="users"
-                    required
-                  />
-                  <FieldError error={fieldErrors.groupName} />
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                    <Input
-                      label="Number of Members"
-                      type="number"
-                      placeholder="e.g. 5"
-                      value={profile.members || ''}
-                      onChange={e => setProfile(p=>({...p, members: e.target.value}))}
-                      icon="users"
-                      required
-                    />
-                    <div className="form-group">
-                      <label className="form-label">Group Type</label>
-                      <select
-                        value={profile.groupType || ''}
-                        onChange={e => setProfile(p=>({...p, groupType: e.target.value}))}
-                        style={{ width:'100%', padding:'10px 12px', borderRadius:'8px', border:'1.5px solid var(--c-border)', fontFamily:'var(--font-sans)', fontSize:14, outline:'none', background:'#fff', color:'var(--c-dark)' }}
-                      >
-                        <option value="">Select type</option>
-                        <option value="friends">Friends Group</option>
-                        <option value="sports">Sports Team</option>
-                        <option value="corporate">Corporate Group</option>
-                        <option value="entertainment">Entertainment Group</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                  </div>
-                  <FieldError error={fieldErrors.members} />
-                  <FieldError error={fieldErrors.groupType} />
-                  {/* Group Image Upload */}
-                  <div className="form-group">
-                    <label className="form-label">Group Photo</label>
-                    <div
-                      onClick={() => document.getElementById('group-img-input').click()}
-                      style={{
-                        border:'2px dashed var(--c-primary)', borderRadius:12,
-                        padding:'20px', textAlign:'center', cursor:'pointer',
-                        background:'rgba(13,148,136,0.04)',
-                        transition:'all .15s',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background='rgba(13,148,136,0.08)'}
-                      onMouseLeave={e => e.currentTarget.style.background='rgba(13,148,136,0.04)'}
-                    >
-                      {profile.groupImagePreview ? (
-                        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
-                          <img src={profile.groupImagePreview} alt="Group" style={{ width:64, height:64, borderRadius:12, objectFit:'cover' }} />
-                          <p style={{ fontSize:12, color:'var(--c-primary)', fontWeight:600 }}>Change Photo</p>
-                        </div>
-                      ) : (
-                        <>
-                          <Icon name="camera" size={28} color="var(--c-primary)" />
-                          <p style={{ fontSize:13, fontWeight:600, color:'var(--c-primary)', marginTop:8 }}>Upload Group Photo</p>
-                          <p style={{ fontSize:11, color:'var(--c-muted)', marginTop:4 }}>JPG, PNG up to 5MB</p>
-                        </>
-                      )}
-                    </div>
-                    <input
-                      id="group-img-input"
-                      type="file"
-                      accept="image/*"
-                      style={{ display:'none' }}
-                      onChange={e => {
-                        const file = e.target.files[0]
-                        if (file) {
-                          const reader = new FileReader()
-                          reader.onload = ev => setProfile(p=>({...p, groupImage: file, groupImagePreview: ev.target.result}))
-                          reader.readAsDataURL(file)
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+              <Input
+                label="Age"
+                type="number"
+                placeholder="Your age"
+                value={profile.age || ''}
+                onChange={e => setProfile(p=>({...p, age: e.target.value}))}
+                icon="user"
+                required
+              />
+              <FieldError error={fieldErrors.age} />
 
-              {/* Individual → Age only */}
-              {basic.type === 'individual' && (
-                <>
-                  <Input
-                    label="Age"
-                    type="number"
-                    placeholder="Your age"
-                    value={profile.age || ''}
-                    onChange={e => setProfile(p=>({...p, age: e.target.value}))}
-                    icon="user"
-                    required
-                  />
-                  <FieldError error={fieldErrors.age} />
-                </>
-              )}
-
-              {/* Group → Representative Details */}
-              {basic.type === 'group' && (
-                <div style={{
-                  background:'rgba(249,250,251,0.8)', borderRadius:14,
-                  padding:'16px', marginBottom:8,
-                  border:'1.5px solid rgba(13,148,136,0.15)',
-                }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
-                    <Icon name="user" size={15} color="var(--c-primary)" />
-                    <p style={{ fontSize:13, fontWeight:700, color:'var(--c-primary)' }}>Representative Details</p>
-                  </div>
-                  <Input
-                    label="Contact Person Name"
-                    placeholder="Name of group representative"
-                    value={profile.contactName || ''}
-                    onChange={e => setProfile(p=>({...p, contactName: e.target.value}))}
-                    icon="user"
-                    required
-                  />
-                  <FieldError error={fieldErrors.contactName} />
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                    <Input
-                      label="Age"
-                      type="number"
-                      placeholder="Age"
-                      value={profile.age || ''}
-                      onChange={e => setProfile(p=>({...p, age: e.target.value}))}
-                      icon="user"
-                      required
-                    />
-                    {/* Contact Mobile with country code */}
-                    <PhoneInput
-                      label="Contact Mobile"
-                      value={profile.contactMobile || ''}
-                      onChange={e => setProfile(p=>({...p, contactMobile: e.target.value}))}
-                      countryCode={contactMobileCC}
-                      onCountryChange={setContactMobileCC}
-                      countryCodeError={fieldErrors.contact_country_code}
-                      phoneError={fieldErrors.contactMobile}
-                      required
-                    />
-                  </div>
-                  <FieldError error={fieldErrors.age} />
-                </div>
-              )}
-
-              <Textarea label="Bio" placeholder={basic.type==='group' ? 'Describe your group, what you do, and what events you\'re available for…' : 'Tell others about yourself…'} value={profile.bio} onChange={pUpd('bio')} rows={3} />
+              <Textarea label="Bio" placeholder="Tell others about yourself…" value={profile.bio} onChange={pUpd('bio')} rows={3} />
               <FieldError error={fieldErrors.bio} />
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                <Input label={basic.type==='group' ? 'Group Rate (₹/hr)' : 'Hourly Rate (₹)'} type="number" placeholder="e.g. 1200" value={profile.rate} onChange={pUpd('rate')} icon="rupee" required />
+                <Input label="Hourly Rate (₹)" type="number" placeholder="e.g. 1200" value={profile.rate} onChange={pUpd('rate')} icon="rupee" required />
                 <div className="form-group">
                   <label className="form-label">City / Location</label>
                   <select
@@ -720,79 +505,6 @@ export default function RegisterPage() {
                 </div>
                 <p style={{fontSize:11,color:'var(--c-muted)',marginTop:8}}>{profile.interests.length} / 3 minimum selected</p>
                 <FieldError error={fieldErrors.interests} />
-              </div>
-
-              {/* Gallery photos (merged from former step 3; selfie flow removed) */}
-              <div style={{ marginBottom: 24, marginTop: 8, paddingTop: 20, borderTop: '1px solid var(--c-border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--c-dark)' }}>📸 Gallery Photos</p>
-                  <span style={{ fontSize: 12, color: galleryItems.length >= 3 ? 'var(--c-success)' : 'var(--c-warning)', fontWeight: 600 }}>
-                    {galleryItems.length}/5 {galleryItems.length < 3 ? '(min 3 required)' : '✓'}
-                  </span>
-                </div>
-                <p style={{ fontSize: 12, color: 'var(--c-muted)', marginBottom: 12 }}>Add at least 3 photos for your profile gallery (max 5).</p>
-                <FieldError error={fieldErrors.count} />
-                <FieldError error={fieldErrors._form} />
-                {galleryItems.length > 0 && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 12 }}>
-                    {galleryItems.map((item, idx) => (
-                      <div key={idx} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', border: '2px solid var(--c-primary)' }}>
-                        <img src={item.preview} alt={`Gallery ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <button
-                          type="button"
-                          onClick={() => removeGalleryItem(idx)}
-                          style={{ position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: 9, background: 'rgba(0,0,0,0.6)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                        >
-                          <Icon name="x" size={10} color="#fff" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {galleryItems.length < 5 && (
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => document.getElementById('register-gallery-input').click()}
-                    onKeyDown={(e) => e.key === 'Enter' && document.getElementById('register-gallery-input').click()}
-                    style={{
-                      border: '2px dashed var(--c-primary)', borderRadius: 12,
-                      padding: '16px', textAlign: 'center', cursor: 'pointer',
-                      background: 'var(--c-primary-lt)', transition: 'all .15s',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(13,148,136,0.1)' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--c-primary-lt)' }}
-                  >
-                    <Icon name="camera" size={24} color="var(--c-primary)" />
-                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-primary)', marginTop: 6 }}>
-                      Add Photos ({5 - galleryItems.length} remaining)
-                    </p>
-                    <p style={{ fontSize: 11, color: 'var(--c-muted)', marginTop: 2 }}>JPG, PNG up to 5MB each</p>
-                  </div>
-                )}
-                <input
-                  id="register-gallery-input"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  style={{ display: 'none' }}
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || [])
-                    files.forEach((file) => {
-                      setGalleryItems((prev) => {
-                        if (prev.length >= 5) return prev
-                        const preview = URL.createObjectURL(file)
-                        return [...prev, { file, preview }]
-                      })
-                    })
-                    setFieldErrors((p) => {
-                      const next = { ...p }
-                      delete next.count
-                      return next
-                    })
-                    e.target.value = ''
-                  }}
-                />
               </div>
 
               <div style={{display:'flex',gap:10}}>
@@ -893,7 +605,7 @@ export default function RegisterPage() {
                 />
                 <FieldError error={fieldErrors.otp_code} />
               </div>
-              {['name', 'email', 'password', 'type', 'country_code', 'phone_number', 'bio', 'rate', 'city_id', 'age', 'interest_ids', 'profile_path', 'profile_photos'].map((k) => (
+              {['name', 'email', 'password', 'type', 'country_code', 'phone_number', 'bio', 'rate', 'city_id', 'age', 'interest_ids'].map((k) => (
                 <FieldError key={k} error={fieldErrors[k]} />
               ))}
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
